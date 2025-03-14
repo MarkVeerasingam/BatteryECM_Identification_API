@@ -75,6 +75,14 @@ class HPPCTest:
                 last_pulse = idx
         return np.array(main_pulses)
     
+    def get_pulse_count(self):
+        """
+        Get the total number of pulses detected in the data.
+        
+        :return: Integer count of detected pulses
+        """
+        return len(self.pulse_starts)
+    
     def extract_pulse(self, start_idx, window_size=1000):
         """
         Extract pulse data for a given start index.
@@ -99,11 +107,14 @@ class HPPCTest:
         :param window_size: Window size for analysis
         :return: Dictionary of pulse characteristics
         """
-        if len(self.pulse_starts) == 0:
+        # Check if there are any pulses detected
+        pulse_count = self.get_pulse_count()
+        if pulse_count == 0:
             raise ValueError("No pulses detected in the data.")
         
-        if pulse_number >= len(self.pulse_starts):
-            raise ValueError(f"Pulse number {pulse_number} exceeds available pulses ({len(self.pulse_starts)}).")
+        # Check if the requested pulse number is valid
+        if pulse_number >= pulse_count:
+            raise ValueError(f"Pulse number {pulse_number} exceeds available pulses ({pulse_count}).")
         
         # Extract selected pulse
         selected_start = self.pulse_starts[pulse_number]
