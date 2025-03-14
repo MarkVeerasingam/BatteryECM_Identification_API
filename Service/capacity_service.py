@@ -1,7 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.io as sio  
 from utils.data_loader import load_LGM50_data
+import matplotlib.pyplot as plt
 
 def extract_soc_ocv_LGM50(battery_label):
     """
@@ -38,3 +37,23 @@ def extract_soc_ocv_LGM50(battery_label):
 
     return SOC, OCV
 
+def fit_soc_ocv_polynomial(battery_label, degree):
+    SOC, OCV = extract_soc_ocv_LGM50(battery_label=battery_label)
+    
+    SOC_flat = np.concatenate(SOC)
+    OCV_flat = np.concatenate(OCV)
+
+    # Scale SOC to the 0-1 range
+    SOC_flat_scaled = SOC_flat / 100 
+
+    coeffs = np.polyfit(SOC_flat_scaled, OCV_flat, degree)
+    poly_fit = np.poly1d(coeffs)    
+
+    # Generate smooth SOC values for plotting the fit curve
+    SOC_fitting = np.linspace(min(SOC_flat_scaled), max(SOC_flat_scaled), 100)
+    OCV_fitting = poly_fit(SOC_fitting)
+
+    return SOC_fitting, OCV_fitting, SOC_flat, OCV_flat, SOC_flat_scaled
+
+
+    

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from utils.data_loader import load_LGM50_data
-from Service.capacity_service import extract_soc_ocv_LGM50
+from Service.capacity_service import extract_soc_ocv_LGM50, fit_soc_ocv_polynomial
 
 # Function to analyze and plot the capacity test data
 def plot_LGM50_SoC_OCV_capacity_test(battery_label):
@@ -43,4 +43,17 @@ def plot_raw_LGM50_capacity_test(battery_label):
     plt.grid(True)
     plt.show()
 
+def plot_soc_ocv_from_capacity_test(battery_label, degree):
+    """Plots the SOC-OCV data along with the fitted polynomial curve."""
+    SOC_fitting, OCV_fitting, SOC_flat, OCV_flat, SOC_flat_scaled = fit_soc_ocv_polynomial(battery_label=battery_label, degree=degree)
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(SOC_flat_scaled, OCV_flat, label="Measured Data", color='blue', alpha=0.6)
+    plt.plot(SOC_fitting, OCV_fitting, label=f"Fitted Polynomial (Degree {degree})", color='red', linewidth=2)
+    plt.xlabel("State of Charge (SOC, %)")
+    plt.ylabel("Open Circuit Voltage (OCV, V)")
+    plt.title(f"OCV vs SOC - Battery {battery_label}")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
