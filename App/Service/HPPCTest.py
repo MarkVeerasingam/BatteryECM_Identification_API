@@ -6,22 +6,24 @@ import scipy.io as sio
 from App.utils.data_loader import load_LGM50_data
 
 class HPPCTest:
-    def __init__(self, battery_label):
+    def __init__(self, battery_label, cycle_number):
         """
         Initialize the HPPCTest class.
         
         :param battery_label: The battery label to filter data by (e.g., 'G1', 'W3', etc.)
+        :param cycle_number: The cycle number to analyze (default is 0)
         """
         self.battery_label = battery_label
         self.test_type = "HPPC_test"
+        self.cycle_number = cycle_number
         
         # Load the data based on the HPPC test
         self.vcell, self.current, self.cap = load_LGM50_data(test_data=self.test_type, battery_label=self.battery_label)
         
         # Convert loaded data to the right format
-        # Taking the first cycle (index 0) and flattening the array
-        self.vcell_cycle = np.array(self.vcell[0]).flatten()
-        self.current_cycle = np.array(self.current[0]).flatten() * -1  # Ensure discharge is positive
+        # Taking the specified cycle and flattening the array
+        self.vcell_cycle = np.array(self.vcell[self.cycle_number]).flatten()
+        self.current_cycle = np.array(self.current[self.cycle_number]).flatten() * -1  # Ensure discharge is positive
         
         # Remove NaN values
         valid_indices = ~np.isnan(self.vcell_cycle) & ~np.isnan(self.current_cycle)
@@ -107,21 +109,18 @@ class HPPCTest:
         :param window_size: Window size for analysis
         :return: Dictionary of pulse characteristics
         """
-        # Check if there are any pulses detected
         pulse_count = self.get_pulse_count()
         if pulse_count == 0:
             raise ValueError("No pulses detected in the data.")
         
-        # Check if the requested pulse number is valid
         if pulse_number >= pulse_count:
             raise ValueError(f"Pulse number {pulse_number} exceeds available pulses ({pulse_count}).")
         
-        # Extract selected pulse
         selected_start = self.pulse_starts[pulse_number]
         time_pulse, current_pulse, voltage_pulse, soc_pulse = self.extract_pulse(
             selected_start, window_size
         )
-        
+
         # Store pulse data for plotting
         self.selected_pulse_data = {
             'start_idx': selected_start,
@@ -133,27 +132,26 @@ class HPPCTest:
             'pulse_number': pulse_number
         }
         
-        # Calculate pulse characteristics
         self.pulse_characteristics = {
             'start_index': selected_start,
             'pulse_duration': len(time_pulse),
             'voltage_drop': voltage_pulse.max() - voltage_pulse.min(),
             'peak_current': np.abs(current_pulse).max(),
             'initial_soc': soc_pulse[0],
-            'final_soc': soc_pulse[-1]
+            'final_soc': soc_pulse[-1],
+            'cycle_number': self.cycle_number
         }
         
-        # Print pulse characteristics
-        print(f"\nPulse {pulse_number} characteristics:")
+        print(f"\nCycle {self.cycle_number} - Pulse {pulse_number} characteristics:")
         print(f"Start index: {selected_start}")
         print(f"Pulse duration: {len(time_pulse)} points")
-        print(f"Voltage drop during pulse: {voltage_pulse.max() - voltage_pulse.min():.3f}V")
+        print(f"Voltage drop: {voltage_pulse.max() - voltage_pulse.min():.3f}V")
         print(f"Peak current: {np.abs(current_pulse).max():.2f}A")
-        print(f"Initial SoC (from OCV): {soc_pulse[0]:.2f}%")
-        print(f"Final SoC (from OCV): {soc_pulse[-1]:.2f}%")
+        print(f"Initial SoC: {soc_pulse[0]:.2f}%")
+        print(f"Final SoC: {soc_pulse[-1]:.2f}%")
         
         return self.pulse_characteristics
-    
+
     def plot_hppc_analysis(self):
         """
         Plot the HPPC analysis results.
@@ -210,3 +208,45 @@ class HPPCTest:
         plt.show()
         
         return fig
+    
+    def save_to_csv(self, output_path=None):
+        """
+        Save the current pulse data to a CSV file.
+
+        :param output_path: Path or directory to save the CSV file.
+        :return: Path to the saved CSV file
+        """
+        if self.selected_pulse_data is None:
+            raise ValueError("No analysis has been run. Call run_analysis() first.")
+
+        # Extract data
+        time_pulse = self.selected_pulse_data['time']
+        voltage_pulse = self.selected_pulse_data['voltage']
+        current_pulse = self.selected_pulse_data['current']
+        soc_pulse = self.selected_pulse_data['soc']
+        pulse_number = self.selected_pulse_data['pulse_number']
+
+        # Create DataFrame
+        pulse_df = pd.DataFrame({
+            'Time': time_pulse,
+            'Voltage': voltage_pulse,
+            'Current': current_pulse,
+            'SoC': soc_pulse
+        })
+
+        # Default directory if no output path provided
+        if output_path is None:
+            output_path = os.path.join("Data", "Output", "LGM50", "HPPC_Test", self.battery_label, f"Cycle_{self.cycle_number}",)
+        
+        # Ensure output_path is a directory
+        if not os.path.isdir(output_path):
+            os.makedirs(output_path, exist_ok=True)
+
+        file_name = f"{self.battery_label}_cycle_{self.cycle_number}_pulse_{pulse_number}_hppc.csv"
+        full_path = os.path.join(output_path, file_name)
+
+        # Save DataFrame to CSV
+        pulse_df.to_csv(full_path, index=False)
+        print(f"Pulse data saved to: {full_path}")
+
+        return full_path

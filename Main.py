@@ -11,12 +11,9 @@ if __name__ == "__main__":
     # capacity_test.save_to_csv(soc, ocv) 
 
     # HPPC Test
-    hppc_test = HPPCTest(battery_label=battery_label)
-    # Get the total number of available pulses
-    total_pulses = hppc_test.get_pulse_count()
-    print(f"Total pulses available: {total_pulses}")
-    first_pulse = min(0, total_pulses)
-    hppc_test.run_analysis(first_pulse)
-
-    # Plot the results
-    hppc_test.plot_hppc_analysis()
+    cycle_number = 0
+    hppc_test = HPPCTest(battery_label=battery_label, cycle_number=cycle_number)
+    pulse_count = hppc_test.get_pulse_count()
+    for pulse in range(pulse_count):
+        hppc_test.run_analysis(pulse_number=pulse) 
+        hppc_test.save_to_csv()
