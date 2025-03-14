@@ -30,7 +30,11 @@ def load_LGM50_data(test_data, battery_label):
         mat = sio.loadmat(hppc_test_data)
 
     # both tests share the same headers and we need to index into the battery labels.
-    col_index = np.where([label[0] == battery_label for label in mat['col_cell_label'][0]])[0][0]
+    try:
+        col_index = np.where([label[0] == battery_label for label in mat['col_cell_label'][0]])[0][0]
+    except IndexError:
+        raise ValueError(f"Battery label '{battery_label}' not found in the file.")
+
 
     # since the share the same header, we can extract the same keys
     vcell = mat['vcell'][:, col_index]
