@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # capacity_test.save_to_csv(soc, ocv) 
 
     # HPPC Test
-    cycle_number = 0
+    cycle_number = 3
     hppc_test = HPPCTest(battery_label=battery_label, cycle_number=cycle_number)
     pulse_count = hppc_test.get_pulse_count()
     for pulse in range(pulse_count):

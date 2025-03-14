@@ -33,7 +33,7 @@ def load_LGM50_data(test_data, battery_label):
     try:
         col_index = np.where([label[0] == battery_label for label in mat['col_cell_label'][0]])[0][0]
     except IndexError:
-        raise ValueError(f"Battery label '{battery_label}' not found in the file.")
+        raise ValueError(f"Battery label '{battery_label}' not found in the file. Must be 'W3', 'W4', 'W5', 'W7', 'W8', 'W9', 'W10', 'G1', 'V4', 'V5'")
 
 
     # since the share the same header, we can extract the same keys
