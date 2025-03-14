@@ -2,16 +2,17 @@ from App.Service.CapacityTest import CapacityTest
 from App.Service.HPPCTest import HPPCTest
 
 if __name__ == "__main__":
-    battery_label = "G1"
+    # Choose Battery Label:
+    battery_label = "V4"
 
-    # Capacity Test
-    # capacity_test = CapacityTest(battery_label=battery_label, degree=11)
-    # soc, ocv = capacity_test.fit_soc_ocv_polynomial()
-    # capacity_test.show_ocv_soc_plot(soc, ocv)
-    # capacity_test.save_to_csv(soc, ocv) 
+    # Capacity Test:
+    capacity_test = CapacityTest(battery_label=battery_label)
+    capacity_test.fit_soc_ocv_polynomial(degree=11)
+    capacity_test.plot_ocv_soc_fitting()
+    capacity_test.save_to_csv() 
 
-    # HPPC Test
-    cycle_number = 3
+    # HPPC Test:
+    cycle_number = 0
     hppc_test = HPPCTest(battery_label=battery_label, cycle_number=cycle_number)
     pulse_count = hppc_test.get_pulse_count()
     for pulse in range(pulse_count):

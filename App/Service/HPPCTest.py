@@ -32,7 +32,7 @@ class HPPCTest:
         self.time_vector = np.arange(len(self.vcell_cycle))
         
         # Load OCV-to-SOC LUT from the capacity test
-        self.ocv_lut_file = f"Data/Output/LGM50/Capacity_Test/{battery_label}/battery_{battery_label}_soc_ocv_fitted.csv"
+        self.ocv_lut_file = f"Data/Output/LGM50/Capacity_Test/{battery_label}/{battery_label}_soc_ocv.csv"
         self.ocv_lut = pd.read_csv(self.ocv_lut_file)
         self.ocv_lut = self.ocv_lut.sort_values(by="OCV")
         self.soc_values = self.ocv_lut["SOC"].values
