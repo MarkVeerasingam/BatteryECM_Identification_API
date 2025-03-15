@@ -3,6 +3,7 @@ import pandas as pd
 import pybamm
 import pybop
 import logging
+import numpy as np
 
 pybamm.set_logging_level("INFO")
 
@@ -18,32 +19,61 @@ class ECMTheveninParameterizer:
         self.optim = None
         self.results = None
 
+        self.soc_ocv_data = None
+        self.load_soc_ocv_data()
+
         # Set up logging
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
 
-    def update_parameters(self):
+    def load_soc_ocv_data(self):
+        """
+        Load the SOC-OCV lookup table from CSV.
+        """
+        file_path = f"Data/Output/LGM50/Capacity_Test/{self.battery_label}/{self.battery_label}_soc_ocv.csv"
+        self.soc_ocv_data = pd.read_csv(file_path)
+        print(f"Loaded SOC-OCV data from {file_path}")
+
+    def interpolate_ocv(self, soc):
+        """
+        Interpolate OCV value from the lookup table based on SOC.
+        
+        :param soc: The state of charge (SOC) to look up.
+        :return: The corresponding OCV value.
+        """
+        # Interpolate using the lookup table
+        if self.soc_ocv_data is not None:
+            soc_values = self.soc_ocv_data['SOC']
+            ocv_values = self.soc_ocv_data['OCV']
+            
+            return np.interp(soc, soc_values, ocv_values)
+        else:
+            raise ValueError("SOC-OCV data not loaded. Please load the data first.")
+
+    def update_parameters(self, inital_soc=1.0, upper_voltage_cutoff=4.2, lower_voltage_cutoff=2.5, cell_capacity=4.85, 
+                          R0_Ohm=1e-3, R1_Ohm=2e-4, C1_F=1e4, R2_Ohm=0.0003, C2_F=40000):
         self.logger.info("Updating parameter set with base parameters...")
         # Base parameters for all models
         self.parameter_set.update({
-            "Initial SoC": 1.0,
-            "Cell capacity [A.h]": 4.85,
-            "Nominal cell capacity [A.h]": 4.85,
+            "Initial SoC": inital_soc,
+            "Cell capacity [A.h]": cell_capacity,
+            "Nominal cell capacity [A.h]": cell_capacity,
             "Element-1 initial overpotential [V]": 0,
-            "Upper voltage cut-off [V]": 4.2,
-            "Lower voltage cut-off [V]": 2.5,
-            "R0 [Ohm]": 1e-3,
-            "R1 [Ohm]": 2e-4,
-            "C1 [F]": 1e4,
-            "Open-circuit voltage [V]": pybop.empirical.Thevenin().default_parameter_values["Open-circuit voltage [V]"]
+            "Upper voltage cut-off [V]": upper_voltage_cutoff,
+            "Lower voltage cut-off [V]": lower_voltage_cutoff,
+            "R0 [Ohm]": R0_Ohm,
+            "R1 [Ohm]": R1_Ohm,
+            "C1 [F]": C1_F,
+            "Open-circuit voltage [V]": self.interpolate_ocv(self.initial_state_of_charge)
+            # "Open-circuit voltage [V]": pybop.empirical.Thevenin().default_parameter_values["Open-circuit voltage [V]"]
         })
         
         # Add parameters for the 2 RC pairs for the thevenin model
         if self.number_of_rc_pairs == 2:
             self.logger.info("Updating parameters for 2 RC pairs...")
             self.parameter_set.update({
-                "R2 [Ohm]": 0.0003,
-                "C2 [F]": 40000,
+                "R2 [Ohm]": R2_Ohm,
+                "C2 [F]": C2_F,
                 "Element-2 initial overpotential [V]": 0,
             }, check_already_exists=False)
 
@@ -59,6 +89,8 @@ class ECMTheveninParameterizer:
         df = pd.read_csv(file_path, index_col=None, na_values=["NA"])
         df = df.drop_duplicates(subset=["Time"], keep="first")
         
+        # df["Voltage"] = savgol_filter(df["Voltage"], window_length=7, polyorder=2)
+
         # Prepare the dataset
         self.dataset = pybop.Dataset({
             "Time [s]": df["Time"].to_numpy(),
@@ -68,7 +100,10 @@ class ECMTheveninParameterizer:
         self.initial_state_of_charge = df["SoC"].iloc[0]
         self.logger.info(f"Data loaded successfully. Initial SoC: {self.initial_state_of_charge}")
 
-    def setup_model(self, number_of_rc_pairs=2):
+    def setup_solver(self, dt_max=5, mode="safe"):
+        self.solver = pybamm.CasadiSolver(mode=mode, dt_max=dt_max)
+
+    def setup_thevenin_model(self, number_of_rc_pairs=2, dt_max=5):
         self.number_of_rc_pairs = number_of_rc_pairs
 
         self.logger.info(f"Setting up model with {number_of_rc_pairs} RC pairs...")
@@ -81,13 +116,13 @@ class ECMTheveninParameterizer:
             self.model = pybop.empirical.Thevenin(
                 parameter_set=self.parameter_set,
                 options={"number of rc elements": 1},
-                solver=pybamm.CasadiSolver(mode="safe", dt_max=10),
+                solver=self.solver,
             )
         elif self.number_of_rc_pairs == 2:
             self.model = pybop.empirical.Thevenin(
                 parameter_set=self.parameter_set,
                 options={"number of rc elements": 2},
-                solver=pybamm.CasadiSolver(mode="safe", dt_max=10),
+                solver=self.solver,
             )
         
         # Build the model
@@ -100,7 +135,8 @@ class ECMTheveninParameterizer:
         self.model.build(initial_state={"Initial SoC": self.initial_state_of_charge})
         self.logger.info("Model built successfully.")
 
-    def setup_problem(self, r_guess=0.005):
+    def setup_problem(self, r_guess=0.005, r0_bounds=[0, 0.5], r1_bounds=[0, 0.5], c1_bounds=[1, 2000], 
+                        r2_bounds=[0, 0.5], c2_bounds=[0, 2000], c1_Gaussian=(500, 100), c2_Gaussian=(2000, 500)):
         self.logger.info("Setting up optimization problem...")
         # the bounds are hardcoded right now. I might want to pass them as r0_bounds, r1_bounds, c1_bounds... all expecting a range of [lower_bound, upper_bound]
         # if i do this i need to also let the .optimize
@@ -110,64 +146,64 @@ class ECMTheveninParameterizer:
             self.parameters = pybop.Parameters(
                 pybop.Parameter(
                     "R0 [Ohm]",
-                    prior=pybop.Gaussian(r_guess, r_guess / 10),
-                    bounds=[0, 0.5],
+                    prior=pybop.Gaussian(r_guess, r_guess / 10),  # mean, sigma
+                    bounds=r0_bounds
                 ),
                 pybop.Parameter(
                     "R1 [Ohm]",
-                    prior=pybop.Gaussian(r_guess, r_guess / 10),
-                    bounds=[0, 0.5],
+                    prior=pybop.Gaussian(r_guess, r_guess / 10),  # mean, sigma
+                    bounds=r1_bounds,
                 ),
                 pybop.Parameter(
                     "C1 [F]",
-                    prior=pybop.Gaussian(500, 100),
-                    bounds=[1, 2000],
+                    prior=pybop.Gaussian(c1_Gaussian[0], c1_Gaussian[1]),  # mean, sigma
+                    bounds=c1_bounds,
                 ),
             )
         elif self.number_of_rc_pairs == 2:
             self.parameters = pybop.Parameters(
                 pybop.Parameter(
                     "R0 [Ohm]",
-                    prior=pybop.Gaussian(r_guess, r_guess / 10),
-                    bounds=[0, 0.5],
+                    prior=pybop.Gaussian(r_guess, r_guess / 10),  # mean, sigma
+                    bounds=r0_bounds,
                 ),
                 pybop.Parameter(
                     "R1 [Ohm]",
-                    prior=pybop.Gaussian(r_guess, r_guess / 10),
-                    bounds=[0, 0.5],
+                    prior=pybop.Gaussian(r_guess, r_guess / 10),  # mean, sigma
+                    bounds=r1_bounds,
                 ),
                 pybop.Parameter(
                     "R2 [Ohm]",
-                    prior=pybop.Gaussian(r_guess, r_guess / 10),
-                    bounds=[0, 0.5],
+                    prior=pybop.Gaussian(r_guess, r_guess / 10),  # mean, sigma
+                    bounds=r2_bounds,
                 ),
                 pybop.Parameter(
                     "C1 [F]",
-                    prior=pybop.Gaussian(500, 100),
-                    bounds=[1, 2000],
+                    prior=pybop.Gaussian(c1_Gaussian[0], c1_Gaussian[1]),  # mean, sigma
+                    bounds=c1_bounds,
                 ),
                 pybop.Parameter(
                     "C2 [F]",
-                    prior=pybop.Gaussian(2000, 500),
-                    bounds=[0, 2000],
+                    prior=pybop.Gaussian(c2_Gaussian[0], c2_Gaussian[1]),  # mean, sigma
+                    bounds=c2_bounds,
                 ),
             )
-        
+
         self.problem = pybop.FittingProblem(
             self.model,
             self.parameters,
             self.dataset,
         )
 
-    def optimize(self, max_unchanged_iterations=30, max_iterations=100):
+    def optimize(self, max_unchanged_iterations=30, max_iterations=100, sigma0 = [1e-3, 1e-3, 1e-3, 50, 500],):
         self.logger.info("Starting optimization...")
         cost = pybop.SumSquaredError(self.problem)
         
         # sigma0 notation by need to be passable to make a customisable problem? its hardcoded for now anyway.
         if self.number_of_rc_pairs == 1:
-            sigma0 = [1e-3, 1e-3, 50]
+            sigma0 = [1e-3, 1e-3, 50] # For R0, R1, C1
         else:
-            sigma0 = [1e-3, 1e-3, 1e-3, 50, 500]
+            sigma0 = [1e-3, 1e-3, 1e-3, 50, 500] # For R0, R1, R2, C1, C2
             
         self.optim = pybop.PSO(
             cost,
