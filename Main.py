@@ -4,16 +4,16 @@ from App.Service.ECMTheveninParameterizer import ECMTheveninParameterizer
 
 if __name__ == "__main__":
     # Choose Battery Label:
-    battery_label = "V4"
-    cycle_number = 0
+    battery_label = "G1"
+    cycle_number = 1
 
     """
     Capacity Test:
     """
-    capacity_test = CapacityTest(battery_label=battery_label)
-    capacity_test.fit_soc_ocv_polynomial(degree=11)
-    capacity_test.plot_ocv_soc_fitting()
-    capacity_test.save_to_csv() 
+    # capacity_test = CapacityTest(battery_label=battery_label)
+    # capacity_test.fit_soc_ocv_polynomial(degree=11)
+    # capacity_test.plot_ocv_soc_fitting()
+    # capacity_test.save_to_csv() 
 
     """
     Hybrid pulse power characterization (HPPC) Test:

@@ -1,2 +1,1 @@
-
-    ecm_parameterizer = ECMTheveninParameterizer(battery_label=battery_l
+    capacity_test.save_to_csv() 
