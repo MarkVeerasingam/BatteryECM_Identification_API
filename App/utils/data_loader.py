@@ -5,8 +5,9 @@ loads in battery data from ..//Data//Input//
 import os
 import scipy.io as sio
 import numpy as np
+import pandas as pd
 
-# Path setup (hardcoded battery data and input directory)
+# Path setup (hardcoded to LGM50 cuz its the only thing im using)
 battery_data = "LGM50"
 data_input_dir = os.path.join("Data", "Input", battery_data)
 
@@ -42,3 +43,12 @@ def load_LGM50_data(test_data, battery_label):
     cap = mat['cap'][:, col_index]
 
     return vcell, current, cap
+
+def load_soc_ocv_data(battery_label):
+        """
+        Load the SOC-OCV lookup table from CSV file generated from running the capacity test..
+        """
+        file_path = f"Data/Output/{battery_data}/Capacity_Test/{battery_label}/{battery_label}_soc_ocv.csv"
+        soc_ocv_data = pd.read_csv(file_path)
+        print(f"Loaded SOC-OCV data from {file_path}")
+        return soc_ocv_data

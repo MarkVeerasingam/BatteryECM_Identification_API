@@ -4,7 +4,7 @@ import pybamm
 import pybop
 import logging
 import numpy as np
-
+from App.utils.data_loader import load_soc_ocv_data 
 pybamm.set_logging_level("INFO")
 
 class ECMTheveninParameterizer:
@@ -18,21 +18,15 @@ class ECMTheveninParameterizer:
         self.problem = None
         self.optim = None
         self.results = None
+        self.pulse_number = None
 
-        self.soc_ocv_data = None
-        self.load_soc_ocv_data()
+        # Load SOC-OCV data - instead of using the emperical thevenin model for OCV, we will use the 
+        # soc-ocv relationship fitted data from the capacity test
+        self.soc_ocv_data = load_soc_ocv_data(self.battery_label)
 
         # Set up logging
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
-
-    def load_soc_ocv_data(self):
-        """
-        Load the SOC-OCV lookup table from CSV.
-        """
-        file_path = f"Data/Output/LGM50/Capacity_Test/{self.battery_label}/{self.battery_label}_soc_ocv.csv"
-        self.soc_ocv_data = pd.read_csv(file_path)
-        print(f"Loaded SOC-OCV data from {file_path}")
 
     def interpolate_ocv(self, soc):
         """
@@ -79,6 +73,8 @@ class ECMTheveninParameterizer:
 
     def load_pulses(self, pulse_number):
         self.logger.info(f"Loading data for pulse {pulse_number}...")
+        self.pulse_number = pulse_number
+
         # Construct the file path dynamically
         file_name = f"{self.battery_label}_cycle_{self.cycle_number}_pulse_{pulse_number}_hppc.csv"
         file_path = os.path.join(
@@ -218,16 +214,17 @@ class ECMTheveninParameterizer:
         self.logger.info("Exporting results...")
          # Default file path
         if output_file is None:
-            default_dir = os.path.join("Data", "Output", "LGM50", "Optmization_Results", self.battery_label)
+            default_dir = os.path.join("Data", "Output", "LGM50", "Optmization_Results", self.battery_label, str(self.cycle_number))
             os.makedirs(default_dir, exist_ok=True)  # Create the directory if it doesn't exist
-            output_file = os.path.join(default_dir, f"{self.battery_label}_cycle_{self.cycle_number}_ecm_parameters.json")
+            output_file = os.path.join(default_dir, f"{self.battery_label}_cycle_{self.cycle_number}_pulse_{self.pulse_number}_ecm_parameters.json")
         
         # Export the parameters
         self.parameter_set.export_parameters(output_file, fit_params=self.parameters)
         self.logger.info(f"Parameters saved to {output_file}")
 
-    def plot_results(self):
-        self.logger.info("Plotting results...")
-        pybop.plot.quick(self.problem, problem_inputs=self.results.x, title="Optimised Comparison")
+    def plot_parameter_convergence_results(self):
         pybop.plot.convergence(self.optim)
         pybop.plot.parameters(self.optim)
+
+    def plot_voltage_model_reference(self):
+        pybop.plot.quick(self.problem, problem_inputs=self.results.x, title="Optimised Comparison")
