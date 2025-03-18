@@ -1,5 +1,4 @@
 {
-    "chemistry": null,
     "Ideal gas constant [J.K-1.mol-1]": 8.314462618,
     "Faraday constant [C.mol-1]": 96485.33212,
     "Boltzmann constant [J.K-1]": 1.380649e-23,
@@ -16,14 +15,12 @@
     "Cell-jig heat transfer coefficient [W/K]": 10,
     "Jig thermal mass [J/K]": 500,
     "Jig-air heat transfer coefficient [W/K]": 10,
-    "Open-circuit voltage [V]": 4.171614770520462,
-    "R0 [Ohm]": 0.03498072494269955,
+    "R0 [Ohm]": 0.08573310200911217,
     "Element-1 initial overpotential [V]": 0,
-    "R1 [Ohm]": 0.007689927080392093,
-    "C1 [F]": 972.0121246857437,
-    "Entropic change [V/K]": "Unable to write value to JSON file",
+    "R1 [Ohm]": 0.11433992256254917,
+    "C1 [F]": 1184.8793402261967,
     "RCR lookup limit [A]": 340,
-    "R2 [Ohm]": 0.07796801094448606,
-    "C2 [F]": 9998.915592928048,
+    "R2 [Ohm]": 0.022855934776360776,
+    "C2 [F]": 18105.482357915873,
     "Element-2 initial overpotential [V]": 0
 }

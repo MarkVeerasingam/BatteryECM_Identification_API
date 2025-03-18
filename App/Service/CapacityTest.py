@@ -16,10 +16,11 @@ class CapacityTest:
         self.battery_label = battery_label
         self.test_type = "capacity_test" 
         self.degree = None  
+        # an array to hold the results value of soc and ocv so i can save them to a csv.
         self.SOC = []
         self.OCV = []
 
-        # Load the data based on the capacity test
+        # Load the data based on the capacity test data
         self.vcell, self.current, self.cap = load_LGM50_data(battery_label=self.battery_label, test_data=self.test_type)
 
         # Analysis results storage
@@ -52,6 +53,7 @@ class CapacityTest:
         """
         Fits a polynomial to the SOC and OCV data.
         """
+        self.degree = degree
         self.extract_soc_ocv()
 
         if self.cap is not None:  # If capacity is available, fit SOC-OCV relationship
@@ -75,6 +77,18 @@ class CapacityTest:
             }
 
             return self.results_data
+
+    def plot_capacity_test(self):
+        plt.figure(figsize=(10, 6))
+        for i in range(len(self.SOC)):
+            plt.plot(self.SOC[i], self.OCV[i], label=f"Cycle {i+1}")
+
+        plt.xlabel("State of Charge (SOC, %)")
+        plt.ylabel("Open Circuit Voltage (OCV, V)")
+        plt.title(f"OCV vs SOC for All Cycles - Battery {self.battery_label}")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
     def plot_ocv_soc_fitting(self):
         """

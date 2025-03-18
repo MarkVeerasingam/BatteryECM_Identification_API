@@ -5,13 +5,14 @@ from App.Service.ECMTheveninParameterizer import ECMTheveninParameterizer
 if __name__ == "__main__":
     # Choose Battery Label:
     battery_label = "G1"
-    cycle_number = 1
+    cycle_number = 0
 
     """
     Capacity Test:
     """
     capacity_test = CapacityTest(battery_label=battery_label)
     capacity_test.fit_soc_ocv_polynomial(degree=13)
+    capacity_test.plot_capacity_test()
     capacity_test.plot_ocv_soc_fitting()
     capacity_test.save_to_csv() 
 
@@ -29,11 +30,11 @@ if __name__ == "__main__":
     ECM Thevenin Parameterization:
     """
     ecm_parameterizer = ECMTheveninParameterizer(battery_label=battery_label, cycle_number=cycle_number)
-    ################################
+    ##############################
     # All Pulses Parameterization:
     ##############################
     for pulse_number in range(pulse_count):
-            print(f"Processing pulse {pulse_number}...")
+            print(f"Processing pulse {pulse_number}")
             ecm_parameterizer.load_pulses(pulse_number)
             ecm_parameterizer.setup_solver(mode="fast", dt_max=10)
             ecm_parameterizer.setup_thevenin_model(number_of_rc_pairs=2)
