@@ -6,12 +6,13 @@ import os
 battery_label = "G1"
 cycle_number = 1
 
-file_loc = f"Data\\Output\\LGM50\\Optimization_Results\\{battery_label}\\{cycle_number}\\"
-loaded_data = pd.read_csv(file_loc + "ecm_lut_table.csv")
+file_loc = f"Data\\Output\\LGM50\\Optimization_Results\\{battery_label}\\"
+loaded_data = pd.read_csv(file_loc + "G1_aggregated_ecm_results.csv")
+loaded_data = loaded_data.drop_duplicates(subset=['soc'], keep='first')
+loaded_data = loaded_data.sort_values('soc')
 
 # Extract data from CSV
-soc_values = np.array(loaded_data["SoC"])
-voltage_values = np.array(loaded_data["voltage"])
+soc_values = np.array(loaded_data["soc"])
 current_values = np.array(loaded_data["current"])
 temperature_values = np.array(loaded_data["temperature"])
 R0_values = np.array(loaded_data["r0"])  
@@ -19,26 +20,27 @@ R1_values = np.array(loaded_data["r1"])
 C1_values = np.array(loaded_data["c1"]) 
 R2_values = np.array(loaded_data["r2"])  
 C2_values = np.array(loaded_data["c2"])
+voltage_values = np.array(loaded_data["voltage"])
 
 # Create interpolation functions for each parameter
 def ocv(soc):
-    return pybamm.Interpolant(soc_values, voltage_values, soc, name="OCV", extrapolate=True)
+    return pybamm.Interpolant(soc_values, voltage_values, soc, name="OCV", interpolator="linear", extrapolate=True)
 
 # Since your data only has one current and temperature, we'll interpolate only in SOC
 def r0(current, temperature, soc):
-    return pybamm.Interpolant(soc_values, R0_values, soc, name="R0", extrapolate=True)
+    return pybamm.Interpolant(soc_values, R0_values, soc, name="R0", interpolator="linear", extrapolate=True)
 
 def r1(current, temperature, soc):
-    return pybamm.Interpolant(soc_values, R1_values, soc, name="R1", extrapolate=True)
+    return pybamm.Interpolant(soc_values, R1_values, soc, name="R1", interpolator="linear", extrapolate=True)
 
 def c1(current, temperature, soc):
-    return pybamm.Interpolant(soc_values, C1_values, soc, name="C1", extrapolate=True)
+    return pybamm.Interpolant(soc_values, C1_values, soc, name="C1", interpolator="linear", extrapolate=True)
 
 def r2(current, temperature, soc):
-    return pybamm.Interpolant(soc_values, R2_values, soc, name="R2", extrapolate=True)
+    return pybamm.Interpolant(soc_values, R2_values, soc, name="R2", interpolator="linear", extrapolate=True)
 
 def c2(current, temperature, soc):
-    return pybamm.Interpolant(soc_values, C2_values, soc, name="C2", extrapolate=True)
+    return pybamm.Interpolant(soc_values, C2_values, soc, name="C2", interpolator="linear", extrapolate=True)
 
 # Create a Thevenin model with 2RC elements
 model = pybamm.equivalent_circuit.Thevenin(options={"number of rc elements": 2})
@@ -66,9 +68,9 @@ parameter_values.update(updated_data, check_already_exists=False)
 # Define experiment
 experiment = pybamm.Experiment(
     [
-        # "Discharge at 1 A until 3 V",
+        "Discharge at 1 A until 2.5 V",
         # "Rest for 2 hours",
-        "Charge at 1 A until 4.2 V",
+        # "Charge at 1 A until 4.2 V",
         # "Hold at 4.2 V until 1 A",
         # "Rest for 2 hours",
         # "Discharge at 0.5 A until 3.6V",

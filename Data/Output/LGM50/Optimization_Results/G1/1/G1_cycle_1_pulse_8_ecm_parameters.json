@@ -17,13 +17,13 @@
     "Jig thermal mass [J/K]": 500,
     "Jig-air heat transfer coefficient [W/K]": 10,
     "Open-circuit voltage [V]": "Unable to write value to JSON file",
-    "R0 [Ohm]": 0.031303330682232254,
+    "R0 [Ohm]": 0.03191676725283495,
     "Element-1 initial overpotential [V]": 0,
-    "R1 [Ohm]": 0.0010758570631115344,
-    "C1 [F]": 662.9290816705313,
+    "R1 [Ohm]": 0.00043191127871559085,
+    "C1 [F]": 896.6327306785358,
     "Entropic change [V/K]": "Unable to write value to JSON file",
     "RCR lookup limit [A]": 340,
-    "R2 [Ohm]": 0.1704585643049043,
-    "C2 [F]": 1999.8697124353967,
+    "R2 [Ohm]": 0.17181750346356153,
+    "C2 [F]": 1998.3946870984364,
     "Element-2 initial overpotential [V]": 0
 }

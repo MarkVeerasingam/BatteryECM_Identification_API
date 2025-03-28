@@ -242,6 +242,9 @@ class ECMTheveninParameterizer:
 
         # Create a new pulse entry
         pulse_entry = {
+            "battery_label": self.battery_label,
+            "cycle": self.cycle_number,
+            "pulse_number": self.pulse_number,
             "current": self.pulse_entry["current"],
             "voltage": self.pulse_entry["voltage"],
             "temperature": self.pulse_entry["temperature"],
@@ -264,12 +267,12 @@ class ECMTheveninParameterizer:
         self.results_lut = pd.concat([self.results_lut, pd.DataFrame([pulse_entry])], ignore_index=True)
 
         # Define CSV file path (only one file for all pulses)
-        csv_filename = os.path.join(default_dir, "ecm_lut_table.csv")
-
+        csv_filename = os.path.join(default_dir, f"{self.battery_label}_{self.cycle_number}_ecm_lut_table.csv")
 
         self.results_lut.to_csv(csv_filename, mode="w", index=False)
 
         self.logger.info(f"Results successfully stored in {csv_filename}.")
+
 
 
     def plot_parameter_convergence_results(self):
