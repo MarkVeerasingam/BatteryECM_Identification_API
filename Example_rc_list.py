@@ -10,23 +10,25 @@ file_loc = f"Data\\Output\\LGM50\\Optmization_Results\\{battery_label}\\{cycle_n
 with open(file_loc + "final_ecm_parameters.json", "r") as f:
     loaded_data = json.load(f)
 
-ocv_values = np.array(loaded_data["Open-circuit voltage [V]"])
+# ocv_values = np.array(loaded_data["Open-circuit voltage [V]"])
 R0_values = np.array(loaded_data["R0 [Ohm]"])
 R1_values = np.array(loaded_data["R1 [Ohm]"])
 C1_values = np.array(loaded_data["C1 [F]"])
 R2_values = np.array(loaded_data["R2 [Ohm]"])
 C2_values = np.array(loaded_data["C2 [F]"])
 
+soc_values = np.linspace(-0.1, 1.1, len(R0_values)) 
 
-soc_values = np.linspace(0, 1, len(ocv_values))  # Creating a SOC array from 0 to 1
+soc_ocv_data = pd.read_csv("Data\Output\LGM50\Capacity_Test\G1\G1_soc_ocv.csv")
+soc_data = np.array(soc_ocv_data['SOC'])
+ocv_data = np.array(soc_ocv_data['OCV'])
 
-# Step 4: Create the interpolants using pybamm.Interpolant
 ocv_interpolant = pybamm.Interpolant(
-    soc_values,  
-    ocv_values,
-    pybamm.StateVector(slice(0, 1)),  # SOC is typically the state vector
+    soc_data,  
+    ocv_data,
+    pybamm.StateVector(slice(0, 1)), 
     interpolator="linear",
-    extrapolate=True
+    extrapolate=False
 )
 
 R0_interpolant = pybamm.Interpolant(
@@ -77,9 +79,9 @@ updated_data = {
     "R2 [Ohm]": R2_interpolant,
     "C2 [F]": C2_interpolant,
     "Element-2 initial overpotential [V]": 0,
-    "Element-1 initial overpotential [V]": 0
+    "Element-1 initial overpotential [V]": 0,
+    "inital SoC": 1
 }
-
 
 # Create a Thevenin model 2RC 
 model = pybamm.equivalent_circuit.Thevenin(options={"number of rc elements": 2})
@@ -93,9 +95,9 @@ parameter_values.update(updated_data, check_already_exists=False)
 # Define experiment with simpler step first
 experiment = pybamm.Experiment(
     [
-        "Discharge at 1 A for 1 hours",
-        # "Rest for 30 minutes",
-        # "Charge at 1 A until 4.2 V",
+        "Discharge at 3 A for 10 hours",
+        "Rest for 2 hours",
+        "Charge at 1 A until 4.2 V",
         # "Hold at 4.2 V until 1 A",
         # "Rest for 2 hours",
         # "Discharge at 0.5 A until 3.6V",

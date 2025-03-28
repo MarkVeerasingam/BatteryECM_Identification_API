@@ -28,6 +28,8 @@ class ECMTheveninParameterizer:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
 
+        self.results_lut = [None]
+
     def interpolate_ocv(self, soc):
         """
         Interpolate OCV value from the lookup table based on SOC.
@@ -58,8 +60,8 @@ class ECMTheveninParameterizer:
             "R0 [Ohm]": R0_Ohm,
             "R1 [Ohm]": R1_Ohm,
             "C1 [F]": C1_F,
-            "Open-circuit voltage [V]": self.interpolate_ocv(self.initial_state_of_charge)
-            # "Open-circuit voltage [V]": pybop.empirical.Thevenin().default_parameter_values["Open-circuit voltage [V]"]
+            # "Open-circuit voltage [V]": self.interpolate_ocv(self.initial_state_of_charge)
+            "Open-circuit voltage [V]": pybop.empirical.Thevenin().default_parameter_values["Open-circuit voltage [V]"]
         })
         
         # Add parameters for the 2 RC pairs for the thevenin model
@@ -95,6 +97,14 @@ class ECMTheveninParameterizer:
         })
         self.initial_state_of_charge = df["SoC"].iloc[0]
         self.logger.info(f"Data loaded successfully. Initial SoC: {self.initial_state_of_charge}")
+
+        # pulse entry is the LUT .csv results with temperature, soc and rc values
+        self.pulse_entry = {
+            "current": df.loc[df["Current"] != 0, "Current"].iloc[0],  # First nonzero current
+            "voltage": df.loc[df["Current"] == 0, "Voltage"].iloc[-1],  # Last rest voltage
+            "temperature": 298.15,  # Fixed temperature (you can change this)
+            "SoC": self.initial_state_of_charge
+        }
 
     def setup_solver(self, dt_max=5, mode="safe"):
         self.solver = pybamm.CasadiSolver(mode=mode, dt_max=dt_max)
@@ -212,15 +222,55 @@ class ECMTheveninParameterizer:
 
     def export_results(self, output_file=None):
         self.logger.info("Exporting results...")
-         # Default file path
+
+        # Default file path
         if output_file is None:
-            default_dir = os.path.join("Data", "Output", "LGM50", "Optmization_Results", self.battery_label, str(self.cycle_number))
-            os.makedirs(default_dir, exist_ok=True)  # Create the directory if it doesn't exist
+            default_dir = os.path.join("Data", "Output", "LGM50", "Optimization_Results", self.battery_label, str(self.cycle_number))
+            os.makedirs(default_dir, exist_ok=True)  # Ensure directory exists
             output_file = os.path.join(default_dir, f"{self.battery_label}_cycle_{self.cycle_number}_pulse_{self.pulse_number}_ecm_parameters.json")
-        
+
         # Export the parameters
         self.parameter_set.export_parameters(output_file, fit_params=self.parameters)
         self.logger.info(f"Parameters saved to {output_file}")
+
+        # Extract optimized parameters
+        if self.number_of_rc_pairs == 1:
+            r0, r1, c1 = self.results.x
+            r2, c2 = None, None  # Not used for 1 RC pair
+        else:  # self.number_of_rc_pairs == 2
+            r0, r1, r2, c1, c2 = self.results.x
+
+        # Create a new pulse entry
+        pulse_entry = {
+            "current": self.pulse_entry["current"],
+            "voltage": self.pulse_entry["voltage"],
+            "temperature": self.pulse_entry["temperature"],
+            "r0": r0,
+            "r1": r1,
+            "c1": c1,
+            "SoC": self.pulse_entry["SoC"],
+        }
+
+        # Include second RC pair if applicable
+        if self.number_of_rc_pairs == 2:
+            pulse_entry["r2"] = r2
+            pulse_entry["c2"] = c2
+
+        # Ensure results_lut is a DataFrame
+        if not isinstance(self.results_lut, pd.DataFrame):
+            self.results_lut = pd.DataFrame(columns=list(pulse_entry.keys()))
+
+        # Append the new pulse entry
+        self.results_lut = pd.concat([self.results_lut, pd.DataFrame([pulse_entry])], ignore_index=True)
+
+        # Define CSV file path (only one file for all pulses)
+        csv_filename = os.path.join(default_dir, "ecm_lut_table.csv")
+
+
+        self.results_lut.to_csv(csv_filename, mode="w", index=False)
+
+        self.logger.info(f"Results successfully stored in {csv_filename}.")
+
 
     def plot_parameter_convergence_results(self):
         pybop.plot.convergence(self.optim)
