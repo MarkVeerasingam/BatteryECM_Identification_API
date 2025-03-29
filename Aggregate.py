@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 
-# Configuration
 battery_label = "G1"
 base_dir = "Data/Output/LGM50/Optimization_Results"
 cycles_to_process = range(11)  # Cycles 0-10
@@ -10,7 +9,7 @@ cycles_to_process = range(11)  # Cycles 0-10
 combined_df = pd.DataFrame()
 
 for cycle in cycles_to_process:
-    csv_path = os.path.join(base_dir, battery_label, str(cycle), "ecm_lut_table.csv")
+    csv_path = os.path.join(base_dir, battery_label, str(cycle), f"{battery_label}_{cycle}_ecm_lut_table.csv")
     
     if os.path.exists(csv_path):
         try:

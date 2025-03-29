@@ -26,7 +26,7 @@ voltage_values = np.array(loaded_data["voltage"])
 def ocv(soc):
     return pybamm.Interpolant(soc_values, voltage_values, soc, name="OCV", interpolator="linear", extrapolate=True)
 
-# Since your data only has one current and temperature, we'll interpolate only in SOC
+# Since the data only has one current and temperature, we'll interpolate only in SOC
 def r0(current, temperature, soc):
     return pybamm.Interpolant(soc_values, R0_values, soc, name="R0", interpolator="linear", extrapolate=True)
 
@@ -48,7 +48,7 @@ model = pybamm.equivalent_circuit.Thevenin(options={"number of rc elements": 2})
 # Define parameter values
 parameter_values = pybamm.ParameterValues("ECM_Example")
 
-# Update with our custom parameters
+# Update with custom parameters
 updated_data = {
     "Open-circuit voltage [V]": ocv,
     "R0 [Ohm]": r0,
@@ -58,9 +58,7 @@ updated_data = {
     "C2 [F]": c2,
     "Element-1 initial overpotential [V]": 0,
     "Element-2 initial overpotential [V]": 0,
-    "Initial SoC": 1.0,  # Set initial SOC to 1 (fully charged)
-    # "Initial temperature [K]": 298.15,  # 25°C
-    # "Current function [A]": 1.0,  
+    "Initial SoC": 1.0, 
 }
 
 parameter_values.update(updated_data, check_already_exists=False)
@@ -68,14 +66,13 @@ parameter_values.update(updated_data, check_already_exists=False)
 # Define experiment
 experiment = pybamm.Experiment(
     [
-        "Discharge at 1 A until 2.5 V",
-        # "Rest for 2 hours",
-        # "Charge at 1 A until 4.2 V",
-        # "Hold at 4.2 V until 1 A",
-        # "Rest for 2 hours",
-        # "Discharge at 0.5 A until 3.6V",
-        # "Charge at C/5 for 1 hour"
-    ]
+        "Discharge at 4 A until 2.5 V",
+        "Rest for 2 hours",
+        "Charge at 5 A until 4.2 V",
+        "Hold at 4.2 V until 3 A",
+        "Discharge at 5 A for 13 hours",
+        "Rest for 6 hours"
+    ] 
 )
 
 # Create solver

@@ -5,6 +5,8 @@ import pybop
 import logging
 import numpy as np
 from App.utils.data_loader import load_soc_ocv_data 
+from scipy.signal import savgol_filter
+
 pybamm.set_logging_level("INFO")
 
 class ECMTheveninParameterizer:
