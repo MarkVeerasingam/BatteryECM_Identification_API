@@ -6,8 +6,7 @@ import numpy as np
 battery_label = "G1"
 cycle_number = 1
 
-file_loc = f"Data\\Output\\LGM50\\Optmization_Results\\{battery_label}\\{cycle_number}\\"
-with open(file_loc + 'final_ecm_parameters_2.json', 'r') as file:
+with open('final_ecm_parameters.json', 'r') as file:
     parmaeter_values_data = json.load(file)
 
 model = pybamm.equivalent_circuit.Thevenin(options={"number of rc elements": 2})
