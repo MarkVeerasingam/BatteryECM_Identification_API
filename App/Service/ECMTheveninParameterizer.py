@@ -4,6 +4,7 @@ import pybamm
 import pybop
 import logging
 import numpy as np
+from App.Service.Mongo import insert_csv_to_mongodb
 from App.utils.data_loader import load_soc_ocv_data 
 from scipy.signal import savgol_filter
 
@@ -271,11 +272,13 @@ class ECMTheveninParameterizer:
         # Define CSV file path (only one file for all pulses)
         csv_filename = os.path.join(default_dir, f"{self.battery_label}_{self.cycle_number}_ecm_lut_table.csv")
 
+        # save lut locally to csv
         self.results_lut.to_csv(csv_filename, mode="w", index=False)
-
         self.logger.info(f"Results successfully stored in {csv_filename}.")
 
-
+        # Save to MongoDB
+        insert_csv_to_mongodb(csv_filename)
+        self.logger.info("LUT table also saved to MongoDB.")
 
     def plot_parameter_convergence_results(self):
         pybop.plot.convergence(self.optim)

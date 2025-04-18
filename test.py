@@ -4,15 +4,15 @@ import pandas as pd
 import os
 
 battery_label = "G1"
-cycle_number = 1
+cycle_number = 0
 
-file_loc = f"Data\\Output\\LGM50\\Optimization_Results\\{battery_label}\\"
-loaded_data = pd.read_csv(file_loc + "G1_aggregated_ecm_results.csv")
-loaded_data = loaded_data.drop_duplicates(subset=['soc'], keep='first')
-loaded_data = loaded_data.sort_values('soc')
+file_loc = f"Data\\Output\\LGM50\\Optimization_Results\\{battery_label}\\{cycle_number}\\"
+loaded_data = pd.read_csv(file_loc + "G1_0_ecm_lut_table.csv")
+loaded_data = loaded_data.drop_duplicates(subset=['SoC'], keep='first')
+loaded_data = loaded_data.sort_values('SoC')
 
 # Extract data from CSV
-soc_values = np.array(loaded_data["soc"])
+soc_values = np.array(loaded_data["SoC"])
 current_values = np.array(loaded_data["current"])
 temperature_values = np.array(loaded_data["temperature"])
 R0_values = np.array(loaded_data["r0"])  
@@ -93,12 +93,11 @@ investigated...
 # Define experiment
 experiment = pybamm.Experiment(
     [
-        # "Discharge at 4 A until 2.5 V",
-        # "Rest for 2 hours",
+        "Discharge at 4 A until 2.5 V",
+        "Rest for 2 hours",
         "Charge at 5 A until 4.2 V",
-        # "Hold at 4.2 V until 3 A",
-        # "Discharge at 5 A for 13 hours",
-        # "Rest for 6 hours"
+        "Hold at 4.2 V until 3 A",
+        "Discharge at 5 A for 13 hours",
     ] 
 )
 
