@@ -19,7 +19,7 @@ def insert_csv_to_mongodb(csv_path):
         cycle = int(df["cycle"].iloc[0])
 
         # Convert data to Python-native types
-        data_rows = df.drop(columns=["battery_label", "cycle"]).applymap(
+        data_rows = df.drop(columns=["battery_label", "cycle"]).map(
             lambda x: x.item() if hasattr(x, "item") else x
         ).to_dict(orient="records")
 

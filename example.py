@@ -41,7 +41,6 @@ voltage_values = np.array(loaded_data["voltage"])
 def ocv(soc):
     return pybamm.Interpolant(soc_values, voltage_values, soc, name="OCV", interpolator="linear", extrapolate=True)
 
-# Since the data only has one current and temperature, we'll interpolate only in SOC
 def r0(current, temperature, soc):
     return pybamm.Interpolant(soc_values, R0_values, soc, name="R0", interpolator="linear", extrapolate=True)
 
@@ -81,11 +80,9 @@ parameter_values.update(updated_data, check_already_exists=False)
 # Define experiment
 experiment = pybamm.Experiment(
     [
-        "Discharge at 4 A until 2.5 V",
-        "Rest for 2 hours",
-        "Charge at 5 A until 4.2 V",
-        "Hold at 4.2 V until 3 A",
-        "Discharge at 5 A for 13 hours",
+        "Discharge at 2A for 1 hour",
+        "Rest for 2 hour",
+        "Discharge at 5A until 3V"
     ] 
 )
 

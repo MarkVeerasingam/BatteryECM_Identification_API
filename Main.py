@@ -37,26 +37,23 @@ if __name__ == "__main__":
             ecm_parameterizer.load_pulses(pulse_number)
             ecm_parameterizer.setup_solver(mode="fast", dt_max=10)
             ecm_parameterizer.setup_thevenin_model(number_of_rc_pairs=2)
-            ecm_parameterizer.update_parameters()
-            ecm_parameterizer.setup_problem()
-            ecm_parameterizer.optimize()
-            # ecm_parameterizer.update_parameters(
-            #     R0_Ohm=1e-3, 
-            #     R1_Ohm=2e-4, 
-            #     C1_F=1e4,
-            #     R2_Ohm=2e-4, 
-            #     C2_F=2e4
-            # )
-            # ecm_parameterizer.setup_problem(
-            #     r_guess=0.005,
-            #     r0_bounds=[0, 0.5],
-            #     r1_bounds=[0, 0.5],
-            #     c1_bounds=[50, 1000],
-            #     r2_bounds=[0, 0.5],
-            #     c2_bounds=[100, 10000],
-            #     c1_Gaussian=(1000, 100),  
-            #     c2_Gaussian=(10000, 500)  
-            # )
-            # ecm_parameterizer.optimize(sigma0=[1e-3, 2e-4, 2e-4, 100, 500]) # R0, R1, R2, C1, C2
-            # ecm_parameterizer.plot_voltage_model_reference()
+            ecm_parameterizer.update_parameters(
+                R0_Ohm=1e-3, 
+                R1_Ohm=2e-4, 
+                C1_F=1e4,
+                R2_Ohm=2e-4, 
+                C2_F=2e4
+            )
+            ecm_parameterizer.setup_problem(
+                r_guess=0.005,
+                r0_bounds=[0, 0.5],
+                r1_bounds=[0, 0.5],
+                c1_bounds=[50, 1000],
+                r2_bounds=[0, 0.5],
+                c2_bounds=[100, 10000],
+                c1_Gaussian=(1000, 100),  
+                c2_Gaussian=(10000, 500)  
+            )
+            ecm_parameterizer.optimize(sigma0=[1e-3, 2e-4, 2e-4, 100, 500]) # R0, R1, R2, C1, C2
+            ecm_parameterizer.plot_voltage_model_reference()
             ecm_parameterizer.export_results()

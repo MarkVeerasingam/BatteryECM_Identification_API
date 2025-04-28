@@ -26,11 +26,6 @@ voltage_values = np.array(loaded_data["voltage"])
 def ocv(soc):
     return pybamm.Interpolant(soc_values, voltage_values, soc, name="OCV", interpolator="linear", extrapolate=True)
 
-# Since the data only has one current and temperature, we'll interpolate only in SOC
-"""
-guess: charge is messed up because current conversion is being converted poorly because of sign conversion.
-- figure out how the pybamm interpolation func works -- why cant i remove current as an arg
-"""
 def r0(current, temperature, soc):
     return pybamm.Interpolant(soc_values, R0_values, soc, name="R0", interpolator="linear", extrapolate=True)
 
@@ -67,37 +62,13 @@ updated_data = {
 
 parameter_values.update(updated_data, check_already_exists=False)
 
-"""
-instead of experiment below to validate...
-step 1:
-use the curruent measurement from the HPPC test data and feed as the experiment condition.
-
-step 2:
-drive cycle data they shared
-
-what the point is
-- compare the measured voltage vs simulated voltage.
-- the point is to use the input HPPC raw current used pre-parameterization, so i get a visual comparison between simulated x measured.
-- Treat like a drive cycle.
--------------------------------------------------
-take the whole 
-"""
-
-"""
-regarding spikes in simulation output.
-
-investigated...
-- linear interpolation, tends to produce these models in ECM when interoplating Linear
-"""
-
 # Define experiment
 experiment = pybamm.Experiment(
     [
         "Discharge at 4 A until 2.5 V",
-        "Rest for 2 hours",
         "Charge at 5 A until 4.2 V",
         "Hold at 4.2 V until 3 A",
-        "Discharge at 5 A for 13 hours",
+        "Discharge at 5 A for 13 hours"
     ] 
 )
 
